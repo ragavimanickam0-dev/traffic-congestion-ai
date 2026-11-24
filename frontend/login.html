@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In - TrafficIntel AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .auth-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--color-bg-base);
+      padding: 2rem 1rem;
+    }
+    .auth-card {
+      max-width: 440px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: 0.75rem;
+      box-shadow: var(--shadow-md);
+      padding: 2.25rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="text-center mb-4">
+        <a href="index.html" class="d-inline-flex align-items-center gap-2 mb-2 text-decoration-none">
+          <span class="badge bg-primary p-2 rounded-2"><i class="bi bi-radar text-white fs-5"></i></span>
+          <span class="fw-bold text-navy-dark fs-4 tracking-tight">TrafficIntel <span class="text-primary">AI</span></span>
+        </a>
+        <h5 class="fw-bold text-navy-dark mt-2 mb-1">Welcome Back</h5>
+        <p class="text-slate small mb-0">Sign in to access predictive analytics and route intelligence</p>
+      </div>
+
+      <div id="loginAlert" class="alert alert-danger py-2 px-3 small d-none" role="alert"></div>
+
+      <form id="loginForm">
+        <div class="mb-3">
+          <label for="email" class="form-label small fw-semibold text-slate">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control border-start-0" id="email" required placeholder="name@company.com">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between">
+            <label for="password" class="form-label small fw-semibold text-slate">Password</label>
+          </div>
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control border-start-0 border-end-0" id="password" required placeholder="••••••••">
+            <button class="btn btn-outline-secondary border-start-0" type="button" id="btnTogglePassword">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn btn-primary w-100 py-2 fw-medium mb-3">
+          Sign In
+        </button>
+
+        <button type="button" id="btnDemoFill" class="btn btn-sm btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2 mb-3">
+          <i class="bi bi-person-check text-primary"></i> Fill Demo Credentials (Instant Access)
+        </button>
+      </form>
+
+      <div class="text-center pt-3 border-top">
+        <span class="small text-slate">Don't have an account? </span>
+        <a href="register.html" class="small fw-semibold">Create account</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('loginForm');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const alertBox = document.getElementById('loginAlert');
+      const btnToggle = document.getElementById('btnTogglePassword');
+      const btnDemo = document.getElementById('btnDemoFill');
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('session_expired')) {
+        alertBox.textContent = 'Your session has expired. Please log in again.';
+        alertBox.classList.remove('d-none');
+      }
+
+      btnToggle.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        btnToggle.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+      });
+
+      btnDemo.addEventListener('click', () => {
+        emailInput.value = 'demo@trafficintel.ai';
+        passwordInput.value = 'Traffic@123';
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        alertBox.classList.add('d-none');
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Signing in...';
+
+        try {
+          const res = await authAPI.login(emailInput.value.trim(), passwordInput.value);
+          if (res && res.access_token) {
+            localStorage.setItem('traffic_token', res.access_token);
+            localStorage.setItem('traffic_user', JSON.stringify(res.user));
+
+            const redirect = urlParams.get('redirect') || 'dashboard.html';
+            window.location.href = redirect;
+          } else {
+            throw new Error('Unexpected response format.');
+          }
+        } catch (err) {
+          alertBox.textContent = err.message || 'Invalid email or password.';
+          alertBox.classList.remove('d-none');
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = 'Sign In';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

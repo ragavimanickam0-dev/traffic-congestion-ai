@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Command Dashboard - TrafficIntel AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-brand">
+        <a href="index.html" class="d-flex align-items-center gap-2 text-decoration-none">
+          <span class="badge bg-primary p-2 rounded-2"><i class="bi bi-radar text-white fs-5"></i></span>
+          <span class="fw-bold text-navy-dark tracking-tight">TrafficIntel <span class="text-primary">AI</span></span>
+        </a>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="sidebar-item">
+          <a href="dashboard.html" class="sidebar-link active">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Overview</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="predictions.html" class="sidebar-link">
+            <i class="bi bi-cpu"></i>
+            <span>AI Predictions</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="route-planner.html" class="sidebar-link">
+            <i class="bi bi-signpost-split"></i>
+            <span>Route Planner</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="reports.html" class="sidebar-link">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>Community Reports</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="analytics.html" class="sidebar-link">
+            <i class="bi bi-bar-chart-line"></i>
+            <span>Analytics & Metrics</span>
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#savedLocationsModal">
+            <i class="bi bi-bookmark-star"></i>
+            <span>Saved Locations</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <i class="bi bi-person-circle fs-4 text-slate"></i>
+            <div class="text-truncate">
+              <div class="fw-semibold small text-navy-dark text-truncate auth-user-name">Guest User</div>
+              <div class="text-slate text-truncate" style="font-size: 0.75rem;" class="auth-user-email">demo@trafficintel.ai</div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-danger border-0 btn-logout" title="Sign Out">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-outline-secondary d-lg-none" id="sidebarToggle">
+            <i class="bi bi-list fs-5"></i>
+          </button>
+
+          <div class="position-relative" style="width: 320px; max-width: 100%;">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+              <input type="text" id="topSearchInput" class="form-control border-start-0" placeholder="Search area or corridor..." autocomplete="off">
+              <button class="btn btn-outline-secondary" id="btnTopGps" title="Detect GPS Location">
+                <i class="bi bi-crosshair text-primary"></i>
+              </button>
+            </div>
+            <div id="topSearchSuggestions" class="autocomplete-suggestions"></div>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <div class="source-pill d-none d-md-flex" id="freshnessBadge">
+            <span class="status-indicator-dot online"></span>
+            <span>Live Sync: <strong id="freshnessTime">Just now</strong></span>
+          </div>
+          <div class="nav-auth-state"></div>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
+          <div>
+            <h4 class="fw-bold mb-1" id="currentLocationTitle">Bangalore Central Corridor</h4>
+            <p class="text-slate small mb-0">Telemetry, real-time meteorological conditions, and multi-horizon AI congestion forecast.</p>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-secondary" id="btnRefreshData">
+              <i class="bi bi-arrow-repeat me-1"></i> Refresh
+            </button>
+            <a href="predictions.html" class="btn btn-sm btn-primary">
+              <i class="bi bi-lightning-charge me-1"></i> Deep ML Forecast
+            </a>
+          </div>
+        </div>
+
+        <!-- 4 Key Telemetry Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="stat-label d-flex justify-content-between align-items-center">
+                <span>Current Congestion</span>
+                <i class="bi bi-speedometer2 text-primary"></i>
+              </div>
+              <div class="stat-value d-flex align-items-center gap-2">
+                <span id="cardCongestionValue">MODERATE</span>
+              </div>
+              <div class="stat-subtext d-flex align-items-center gap-1" id="cardSpeedText">
+                <i class="bi bi-activity text-warning"></i> Avg speed: 28 km/h (42% free-flow)
+              </div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="stat-label d-flex justify-content-between align-items-center">
+                <span>Ambient Weather</span>
+                <i class="bi bi-cloud-sun text-primary"></i>
+              </div>
+              <div class="stat-value" id="cardWeatherTemp">24.5 °C</div>
+              <div class="stat-subtext" id="cardWeatherDesc">
+                <i class="bi bi-droplet me-1"></i> Humidity 65% | Rain: 0.0 mm
+              </div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="stat-label d-flex justify-content-between align-items-center">
+                <span>30-Min AI Forecast</span>
+                <i class="bi bi-cpu text-primary"></i>
+              </div>
+              <div class="stat-value text-warning" id="cardForecastLevel">MODERATE</div>
+              <div class="stat-subtext" id="cardForecastConf">
+                <i class="bi bi-shield-check text-success"></i> Model Confidence: 84.6%
+              </div>
+            </div>
+          </div>
+
+          <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+              <div class="stat-label d-flex justify-content-between align-items-center">
+                <span>Best Departure</span>
+                <i class="bi bi-clock-history text-primary"></i>
+              </div>
+              <div class="stat-value text-success" id="cardDepartureWindow">Now</div>
+              <div class="stat-subtext text-truncate" id="cardDepartureNote">
+                Depart before 17:30 to avoid rush peak
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Map & Forecast Chart -->
+        <div class="row g-4 mb-4">
+          <div class="col-lg-7">
+            <div class="card-custom h-100 position-relative">
+              <div class="card-header-custom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-map text-primary"></i>
+                  <h6 class="fw-bold mb-0">Regional Traffic & Incident Map</h6>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge badge-traffic-low" style="font-size: 0.7rem;">Low &gt;35km/h</span>
+                  <span class="badge badge-traffic-mod" style="font-size: 0.7rem;">Mod 20-35km/h</span>
+                  <span class="badge badge-traffic-high" style="font-size: 0.7rem;">High &lt;20km/h</span>
+                </div>
+              </div>
+              <div class="p-3">
+                <div id="dashboardMap" class="map-frame map-frame-lg"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="card-custom mb-4">
+              <div class="card-header-custom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-graph-up text-primary"></i>
+                  <h6 class="fw-bold mb-0">Congestion Forecast Horizon</h6>
+                </div>
+                <span class="source-pill">Random Forest ML</span>
+              </div>
+              <div class="p-3">
+                <canvas id="forecastChart" height="200"></canvas>
+              </div>
+            </div>
+
+            <div class="card-custom">
+              <div class="card-header-custom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-signpost-2 text-primary"></i>
+                  <h6 class="fw-bold mb-0">Departure Window Comparison</h6>
+                </div>
+              </div>
+              <div class="p-3">
+                <div class="table-responsive">
+                  <table class="table table-sm table-borderless align-middle mb-0">
+                    <thead class="text-slate small border-bottom">
+                      <tr>
+                        <th>Departure</th>
+                        <th>Forecast</th>
+                        <th>Est. Duration</th>
+                        <th>Recommendation</th>
+                      </tr>
+                    </thead>
+                    <tbody id="departureTableBody" class="small">
+                      <tr>
+                        <td class="fw-semibold">Now</td>
+                        <td><span class="badge badge-traffic-low">Low</span></td>
+                        <td>22 mins</td>
+                        <td><span class="text-success fw-medium">Recommended</span></td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">+15 Mins</td>
+                        <td><span class="badge badge-traffic-mod">Moderate</span></td>
+                        <td>29 mins</td>
+                        <td><span class="text-muted">+7m delay</span></td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">+30 Mins</td>
+                        <td><span class="badge badge-traffic-high">High</span></td>
+                        <td>41 mins</td>
+                        <td><span class="text-danger">+19m delay</span></td>
+                      </tr>
+                      <tr>
+                        <td class="fw-semibold">+60 Mins</td>
+                        <td><span class="badge badge-traffic-mod">Moderate</span></td>
+                        <td>31 mins</td>
+                        <td><span class="text-muted">Gradual easing</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card-custom">
+          <div class="card-header-custom">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-clock-history text-primary"></i>
+              <h6 class="fw-bold mb-0">Recent Prediction Inquiries</h6>
+            </div>
+            <a href="predictions.html" class="small fw-medium">Run New Prediction &rarr;</a>
+          </div>
+          <div class="p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-slate small">
+                  <tr>
+                    <th class="ps-3">Location</th>
+                    <th>Horizon</th>
+                    <th>Predicted Congestion</th>
+                    <th>Confidence</th>
+                    <th>Weather Input</th>
+                    <th>Timestamp</th>
+                    <th class="pe-3 text-end">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="historyTableBody" class="small">
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">
+                      <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                      Loading prediction history...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Saved Locations Modal -->
+  <div class="modal fade" id="savedLocationsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-navy-dark"><i class="bi bi-bookmark-star text-primary me-2"></i>Saved Places</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="saveLocationForm" class="mb-4 p-3 bg-light rounded-3 border">
+            <h6 class="fw-semibold small text-navy-dark mb-2">Save Current or Custom Place</h6>
+            <div class="row g-2 mb-2">
+              <div class="col-8">
+                <input type="text" class="form-control form-control-sm" id="savedLabel" placeholder="e.g. Home, Tech Park, Campus" required>
+              </div>
+              <div class="col-4">
+                <select class="form-select form-select-sm" id="savedCategory">
+                  <option value="Home">Home</option>
+                  <option value="Work">Work</option>
+                  <option value="College">College</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-2">
+              <input type="text" class="form-control form-control-sm" id="savedAddress" placeholder="Address or Location Name" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary w-100">Save Location</button>
+          </form>
+
+          <div id="savedLocationsList">
+            <div class="text-center text-muted small py-3">Loading saved locations...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

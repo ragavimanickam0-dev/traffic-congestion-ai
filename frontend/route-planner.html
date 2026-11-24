@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Route Planner & Alternatives - TrafficIntel AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-brand">
+        <a href="index.html" class="d-flex align-items-center gap-2 text-decoration-none">
+          <span class="badge bg-primary p-2 rounded-2"><i class="bi bi-radar text-white fs-5"></i></span>
+          <span class="fw-bold text-navy-dark tracking-tight">TrafficIntel <span class="text-primary">AI</span></span>
+        </a>
+      </div>
+
+      <ul class="sidebar-menu">
+        <li class="sidebar-item"><a href="dashboard.html" class="sidebar-link"><i class="bi bi-grid-1x2"></i><span>Overview</span></a></li>
+        <li class="sidebar-item"><a href="predictions.html" class="sidebar-link"><i class="bi bi-cpu"></i><span>AI Predictions</span></a></li>
+        <li class="sidebar-item"><a href="route-planner.html" class="sidebar-link active"><i class="bi bi-signpost-split"></i><span>Route Planner</span></a></li>
+        <li class="sidebar-item"><a href="reports.html" class="sidebar-link"><i class="bi bi-exclamation-triangle"></i><span>Community Reports</span></a></li>
+        <li class="sidebar-item"><a href="analytics.html" class="sidebar-link"><i class="bi bi-bar-chart-line"></i><span>Analytics & Metrics</span></a></li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <i class="bi bi-person-circle fs-4 text-slate"></i>
+            <div class="text-truncate">
+              <div class="fw-semibold small text-navy-dark text-truncate auth-user-name">Guest User</div>
+              <div class="text-slate text-truncate" style="font-size: 0.75rem;" class="auth-user-email">demo@trafficintel.ai</div>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-danger border-0 btn-logout" title="Sign Out"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="d-flex align-items-center gap-3">
+          <button class="btn btn-sm btn-outline-secondary d-lg-none" id="sidebarToggle"><i class="bi bi-list fs-5"></i></button>
+          <div class="fw-bold text-navy-dark">Route Comparison & Travel Duration Intelligence</div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <span class="source-pill"><i class="bi bi-diagram-2 text-primary"></i> OSRM Routing + ML Congestion Factor</span>
+          <div class="nav-auth-state"></div>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <div class="row g-4">
+          <div class="col-lg-4">
+            <div class="card-custom p-4 mb-4">
+              <h5 class="fw-bold text-navy-dark mb-3"><i class="bi bi-geo-alt text-primary me-2"></i>Trip Waypoints</h5>
+
+              <form id="routeForm">
+                <div class="mb-3 position-relative">
+                  <label class="form-label small fw-semibold text-slate">Starting Origin</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 text-success"><i class="bi bi-record-circle"></i></span>
+                    <input type="text" id="originInput" class="form-control border-start-0" placeholder="Origin address or area" value="Majestic Transit Center, Bangalore" required>
+                    <button class="btn btn-outline-secondary" type="button" id="btnOriginGps" title="Use Current GPS"><i class="bi bi-crosshair text-primary"></i></button>
+                  </div>
+                  <div id="originSuggestions" class="autocomplete-suggestions"></div>
+                </div>
+
+                <div class="text-center my-2">
+                  <button type="button" id="btnSwapRoute" class="btn btn-sm btn-light border rounded-circle" title="Swap Origin & Destination">
+                    <i class="bi bi-arrow-down-up text-primary"></i>
+                  </button>
+                </div>
+
+                <div class="mb-4 position-relative">
+                  <label class="form-label small fw-semibold text-slate">Destination</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-geo-alt-fill"></i></span>
+                    <input type="text" id="destInput" class="form-control border-start-0" placeholder="Destination address or area" value="Electronic City Phase 1, Bangalore" required>
+                  </div>
+                  <div id="destSuggestions" class="autocomplete-suggestions"></div>
+                </div>
+
+                <button type="submit" id="btnCalculateRoute" class="btn btn-primary w-100 py-2 fw-medium">
+                  <i class="bi bi-compass me-1"></i> Compare Available Routes
+                </button>
+              </form>
+            </div>
+
+            <!-- Route Cards -->
+            <div id="routeComparisonSection" class="d-none">
+              <h6 class="fw-bold text-navy-dark mb-3">Available Route Options</h6>
+              
+              <div class="card-custom p-3 mb-3 border-primary" style="border-width: 2px;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-primary text-white">Route A: Primary Highway</span>
+                  <span class="badge badge-traffic-low" id="route1CongBadge">Moderate Delay</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                  <div>
+                    <div class="fs-4 fw-bold text-navy-dark" id="route1Duration">38 mins</div>
+                    <div class="text-slate small" id="route1Distance">21.4 km</div>
+                  </div>
+                  <span class="badge bg-light text-primary border small" id="route1RecommendationTag">FASTEST PATH</span>
+                </div>
+                <div class="text-slate small border-top pt-2" id="route1Summary">
+                  Via Hosur Road Elevated Expressway. Free-flow on flyover.
+                </div>
+              </div>
+
+              <div class="card-custom p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-light text-slate border">Route B: Arterial Bypass</span>
+                  <span class="badge badge-traffic-high" id="route2CongBadge">Heavy Delay</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                  <div>
+                    <div class="fs-4 fw-bold text-navy-dark" id="route2Duration">49 mins</div>
+                    <div class="text-slate small" id="route2Distance">23.8 km</div>
+                  </div>
+                  <span class="badge bg-light text-danger border small">+11 mins slower</span>
+                </div>
+                <div class="text-slate small border-top pt-2" id="route2Summary">
+                  Via Bannerghatta Bypass. Active bottleneck near junction.
+                </div>
+              </div>
+
+              <div class="p-3 bg-light rounded-3 border">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <i class="bi bi-clock-history text-primary"></i>
+                  <span class="fw-bold small text-navy-dark">Route Departure Guidance</span>
+                </div>
+                <p class="text-slate small mb-0" id="routeDepartureGuidance">
+                  Departing now avoids an estimated +18 minute delay anticipated as peak evening office traffic scales up.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Map -->
+          <div class="col-lg-8">
+            <div class="card-custom h-100">
+              <div class="card-header-custom">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-map text-primary"></i>
+                  <h6 class="fw-bold mb-0">Multi-Path Trajectory Visualization</h6>
+                </div>
+                <div class="d-flex align-items-center gap-2 small">
+                  <span class="d-flex align-items-center gap-1">
+                    <span style="display:inline-block; width:14px; height:4px; background:#2563eb; border-radius:2px;"></span> Route A
+                  </span>
+                  <span class="d-flex align-items-center gap-1 ms-2">
+                    <span style="display:inline-block; width:14px; height:4px; background:#94a3b8; border-radius:2px; border:1px dashed #64748b;"></span> Route B (Alt)
+                  </span>
+                </div>
+              </div>
+              <div class="p-3">
+                <div id="routeMap" class="map-frame map-frame-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/routes.js"></script>
+</body>
+</html>
